@@ -1,0 +1,6 @@
+# Direnv stuff
+.direnv
+
+# Rust stuff
+/target
+/Cargo.lock
