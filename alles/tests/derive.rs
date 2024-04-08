@@ -9,7 +9,7 @@ struct Test {}
 #[derive(Debug, Clone, Alles)]
 struct Test2 {
     foo: u8,
-    bar: i8,
+    bar: String,
 }
 
 #[derive(Debug, Clone, Alles)]

@@ -27,7 +27,7 @@ fn derive_struct(ident: Ident, st: DataStruct, generics: Generics) -> TokenStrea
                 let fident = f.ident.as_ref().unwrap();
                 let fty = &f.ty;
 
-                quote_spanned! {f.span()=>
+                quote_spanned! {f.ty.span()=>
                     let #fident = <#fty as alles::Alles>::generate();
                 }
             });
@@ -69,7 +69,7 @@ fn derive_struct(ident: Ident, st: DataStruct, generics: Generics) -> TokenStrea
                 let fident = format_ident!("_{idx}");
                 let fty = &f.ty;
 
-                quote_spanned! {f.span()=>
+                quote_spanned! {f.ty.span()=>
                     let #fident = <#fty as alles::Alles>::generate();
                 }
             });
