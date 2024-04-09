@@ -3,7 +3,9 @@ use proc_macro::TokenStream as TS;
 use proc_macro2::TokenStream;
 use proc_macro_error::{abort, proc_macro_error};
 use quote::{format_ident, quote, quote_spanned};
-use syn::{parse_macro_input, spanned::Spanned, DataStruct, DeriveInput, Generics, Ident};
+use syn::{
+    parse_macro_input, spanned::Spanned, DataEnum, DataStruct, DeriveInput, Generics, Ident,
+};
 
 #[proc_macro_error]
 #[proc_macro_derive(Alles)]
@@ -12,11 +14,36 @@ pub fn alles_derive(input: TS) -> TS {
 
     let imp = match derive_input.data {
         syn::Data::Struct(st) => derive_struct(derive_input.ident, st, derive_input.generics),
-        syn::Data::Enum(_) => todo!(),
+        syn::Data::Enum(en) => derive_enum(derive_input.ident, en, derive_input.generics),
         syn::Data::Union(c) => abort!(c.union_token, "Unions are not supported"),
     };
 
     imp.into()
+}
+
+fn derive_enum(ident: Ident, en: DataEnum, generics: Generics) -> TokenStream {
+    let variants_init = en.variants.iter().map(|v| {
+    });
+
+    let variants_build = quote! {};
+
+    let (impl_gen, ty_gen, where_gen) = generics.split_for_impl();
+    if en.variants.is_empty() {
+        abort!(
+            ident,
+            "Empty enums cannot be instantiated, so Alles cannot be derived for it."
+        )
+    } else {
+        quote! {
+            impl #impl_gen alles::Alles for #ident #ty_gen #where_gen {
+                fn generate() -> impl core::iter::Iterator<Item = Self> + Clone {
+                    #( #variants_init )*
+
+                    #variants_build
+                }
+            }
+        }
+    }
 }
 
 fn derive_struct(ident: Ident, st: DataStruct, generics: Generics) -> TokenStream {

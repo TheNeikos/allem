@@ -1,4 +1,3 @@
-
 pub use alles_derive::Alles;
 
 /// Trait that allows generating all useful variants of a type
@@ -29,20 +28,6 @@ impl Alles for i8 {
     }
 }
 
-struct Foo {
-    name: u8,
-    age: i8,
-}
-
-impl Alles for Foo {
-    fn generate() -> impl Iterator<Item = Self> + Clone {
-        let name = u8::generate();
-        let age = i8::generate();
-
-        itertools::iproduct!(name, age).map(|(name, age)| Foo { name, age })
-    }
-}
-
 #[doc(hidden)]
 pub mod private {
     pub use itertools::iproduct;
@@ -51,6 +36,21 @@ pub mod private {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[allow(dead_code)]
+    struct Foo {
+        name: u8,
+        age: i8,
+    }
+
+    impl Alles for Foo {
+        fn generate() -> impl Iterator<Item = Self> + Clone {
+            let name = u8::generate();
+            let age = i8::generate();
+
+            itertools::iproduct!(name, age).map(|(name, age)| Foo { name, age })
+        }
+    }
 
     #[test]
     fn check_generation() {
