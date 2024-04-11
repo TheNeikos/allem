@@ -68,6 +68,7 @@
 
           nativeBuildInputs = [
             rustTarget
+            pkgs.cargo-expand
           ];
         };
       }
