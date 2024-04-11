@@ -28,8 +28,13 @@ struct Test5<T: Alles + Clone> {
 #[derive(Debug, Clone, Alles)]
 enum Test6 {
     Foo,
-    Bar { bar: i8 },
-    Baz { name: String },
+    Bar {
+        bar: i8,
+    },
+    Baz {
+        #[alles(with_values = ["Test", "Foo"])]
+        name: String,
+    },
 }
 
 #[test]
@@ -42,5 +47,5 @@ fn check_impls() {
     let i8cnt = i8::generate().count();
     let cnt3 = Test6::generate().count();
 
-    assert_eq!(i8cnt + 1, cnt3);
+    assert_eq!(i8cnt + 1 + 2, cnt3);
 }
