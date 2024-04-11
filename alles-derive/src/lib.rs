@@ -197,21 +197,36 @@ fn generate_init_for_fields(fields: &Fields) -> TokenStream {
                     }
                 };
 
-                let mut gen = quote!(<#fty as alles::Alles>::generate());
+                let gen = fattrs
+                    .with_values
+                    .map(|with_values| {
+                        let with_values = with_values
+                            .into_iter()
+                            .map(|e| quote_spanned!(e.span()=> core::convert::Into::into(#e)));
+                        quote! {
+                            [
+                                #( #with_values ),*
+                            ].into_iter()
+                        }
+                    })
+                    .unwrap_or_else(|| quote!(<#fty as alles::Alles>::generate()));
 
-                if let Some(with_values) = fattrs.with_values {
-                    let with_values = with_values
-                        .into_iter()
-                        .map(|e| quote_spanned!(e.span()=> core::convert::Into::into(#e)));
-                    gen = quote! {
-                        [
-                            #( #with_values ),*
-                        ].into_iter()
-                    };
-                }
+                let and_values = fattrs
+                    .and_values
+                    .map(|and_values| {
+                        let and_values = and_values
+                            .into_iter()
+                            .map(|e| quote_spanned!(e.span()=> core::convert::Into::into(#e)));
+                        quote! {
+                            [
+                                #( #and_values ),*
+                            ].into_iter()
+                        }
+                    })
+                    .unwrap_or_else(|| quote! { core::iter::empty() });
 
                 quote_spanned! {f.ty.span()=>
-                    let #fident = #gen;
+                    let #fident = (#gen).chain(#and_values);
                 }
             })
             .collect(),
@@ -234,10 +249,14 @@ fn generate_init_for_fields(fields: &Fields) -> TokenStream {
 
 struct FieldAttributes {
     with_values: Option<Punctuated<Expr, Token![,]>>,
+    and_values: Option<Punctuated<Expr, Token![,]>>,
 }
 
 fn parse_field_attributes(attrs: &[Attribute]) -> Result<FieldAttributes, syn::Error> {
-    let mut field_attrs = FieldAttributes { with_values: None };
+    let mut field_attrs = FieldAttributes {
+        with_values: None,
+        and_values: None,
+    };
 
     for attr in attrs {
         if attr.path().is_ident("alles") {
@@ -247,8 +266,18 @@ fn parse_field_attributes(attrs: &[Attribute]) -> Result<FieldAttributes, syn::E
 
                     let content;
                     bracketed!(content in meta.input);
-                    let values = Punctuated::<Expr, Token![,]>::parse_terminated(&content)?;
+                    let values = Punctuated::parse_terminated(&content)?;
                     field_attrs.with_values = Some(values);
+                    return Ok(());
+                }
+
+                if meta.path.is_ident("and_values") {
+                    meta.input.parse::<Token![=]>()?;
+
+                    let content;
+                    bracketed!(content in meta.input);
+                    let values = Punctuated::parse_terminated(&content)?;
+                    field_attrs.and_values = Some(values);
                     return Ok(());
                 }
 
