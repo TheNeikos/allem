@@ -24,7 +24,7 @@ pub trait Alles: Sized {
 }
 
 impl Alles for u8 {
-    /// The default impl for u8 returns a list of interesting values, mostly primes and maximums
+    /// The default impl returns a list of interesting values, mostly primes and maximums
     fn generate() -> impl Iterator<Item = Self> + Clone {
         [
             0, 1, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73,
@@ -36,13 +36,53 @@ impl Alles for u8 {
 }
 
 impl Alles for i8 {
-    /// The default impl for i8 returns a list of interesting values, mostly primes and maximums
+    /// The default impl returns a list of interesting values, mostly primes and maximums
     fn generate() -> impl Iterator<Item = Self> + Clone {
         [
             0, -1, -2, -3, -5, -7, -11, -13, -17, -19, -23, -29, -31, -37, -41, -43, -47, -53, -59,
             -61, -67, -71, -73, -79, -83, -89, -97, -101, -103, -107, -109, -113, -127, 1, 2, 3, 5,
             7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97,
             101, 103, 107, 109, 113, 127,
+        ]
+        .into_iter()
+    }
+}
+
+impl Alles for u16 {
+    /// The default impl returns a list of interesting values, mostly primes and maximums
+    fn generate() -> impl Iterator<Item = Self> + Clone {
+        [
+            u16::MIN,
+            u16::MAX,
+            u16::MAX / 2,
+            1,
+            2,
+            3,
+            5,
+            7,
+            11,
+            13,
+            17,
+            19,
+            23,
+            157,
+            163,
+            167,
+            173,
+            179,
+            181,
+            191,
+            193,
+            197,
+            199,
+            211,
+            223,
+            227,
+            229,
+            233,
+            239,
+            241,
+            251,
         ]
         .into_iter()
     }
