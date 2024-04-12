@@ -9,7 +9,7 @@
 //!
 //! To implement it for your own types you can use the [Alles](derive@Alles) derive macro. Check it out for
 //! documentation!
-pub use alles_derive::Alles;
+pub use allem_derive::Alles;
 
 /// Trait to generate different variants of a type
 ///

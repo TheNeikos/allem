@@ -7,8 +7,8 @@ use syn::{
     DataStruct, DeriveInput, Error, Expr, Fields, Generics, Ident, Token,
 };
 
-#[proc_macro_derive(Alles, attributes(alles))]
-pub fn alles_derive(input: TS) -> TS {
+#[proc_macro_derive(Alles, attributes(allem))]
+pub fn allem_derive(input: TS) -> TS {
     let derive_input: DeriveInput = parse_macro_input!(input);
 
     let imp = match derive_input.data {
@@ -36,7 +36,7 @@ fn derive_enum(ident: Ident, en: DataEnum, generics: Generics) -> Result<TokenSt
         .collect::<Result<Vec<TokenStream>, Error>>()?;
 
     Ok(quote! {
-        impl #impl_gen alles::Alles for #ident #ty_gen #where_gen {
+        impl #impl_gen allem::Alles for #ident #ty_gen #where_gen {
             fn generate() -> impl core::iter::Iterator<Item = Self> + Clone {
                 let fields = std::iter::empty::<Self>();
 
@@ -68,7 +68,7 @@ fn derive_struct(ident: Ident, st: DataStruct, generics: Generics) -> Result<Tok
                     .collect::<Vec<_>>();
 
                 quote! {
-                    alles::private::iproduct!( #( #fields_idents ),* ).map(|( #( #fields_idents ),* )| {
+                    allem::private::iproduct!( #( #fields_idents ),* ).map(|( #( #fields_idents ),* )| {
                         Self { #( #fields_idents ),* }
                     })
                 }
@@ -94,7 +94,7 @@ fn derive_struct(ident: Ident, st: DataStruct, generics: Generics) -> Result<Tok
                     .map(|(idx, _)| syn::Index::from(idx));
 
                 quote! {
-                    alles::private::iproduct!( #( #fields_idents ),* ).map(|( #( #fields_idents ),* )| {
+                    allem::private::iproduct!( #( #fields_idents ),* ).map(|( #( #fields_idents ),* )| {
                         Self { #( #fields_idx: #fields_idents ),* }
                     })
                 }
@@ -106,7 +106,7 @@ fn derive_struct(ident: Ident, st: DataStruct, generics: Generics) -> Result<Tok
     };
 
     Ok(quote! {
-        impl #impl_gen alles::Alles for #ident #ty_gen #where_gen {
+        impl #impl_gen allem::Alles for #ident #ty_gen #where_gen {
             fn generate() -> impl core::iter::Iterator<Item = Self> + Clone {
                 #fields_init
 
@@ -133,7 +133,7 @@ fn generate_build_for_variant(variant: &syn::Variant) -> Result<TokenStream, Err
                     .collect::<Vec<_>>();
 
                 quote! {
-                    alles::private::iproduct!( #( #fields_idents ),* ).map(|( #( #fields_idents ),* )| {
+                    allem::private::iproduct!( #( #fields_idents ),* ).map(|( #( #fields_idents ),* )| {
                         Self:: #variant_ident { #( #fields_idents ),* }
                     })
                 }
@@ -159,7 +159,7 @@ fn generate_build_for_variant(variant: &syn::Variant) -> Result<TokenStream, Err
                     .map(|(idx, _)| syn::Index::from(idx));
 
                 quote! {
-                    alles::private::iproduct!( #( #fields_idents ),* ).map(|( #( #fields_idents ),* )| {
+                    allem::private::iproduct!( #( #fields_idents ),* ).map(|( #( #fields_idents ),* )| {
                         Self:: #variant_ident { #( #fields_idx: #fields_idents ),* }
                     })
                 }
@@ -200,28 +200,14 @@ fn generate_init_for_fields(fields: &Fields) -> TokenStream {
                 let gen = fattrs
                     .with_values
                     .map(|with_values| {
-                        let with_values = with_values
-                            .into_iter()
-                            .map(|e| quote_spanned!(e.span()=> core::convert::Into::into(#e)));
-                        quote! {
-                            [
-                                #( #with_values ),*
-                            ].into_iter()
-                        }
+                        quote! { (#with_values).into_iter() }
                     })
-                    .unwrap_or_else(|| quote!(<#fty as alles::Alles>::generate()));
+                    .unwrap_or_else(|| quote!(<#fty as allem::Alles>::generate()));
 
                 let and_values = fattrs
                     .and_values
                     .map(|and_values| {
-                        let and_values = and_values
-                            .into_iter()
-                            .map(|e| quote_spanned!(e.span()=> core::convert::Into::into(#e)));
-                        quote! {
-                            [
-                                #( #and_values ),*
-                            ].into_iter()
-                        }
+                        quote! { (#and_values).into_iter() }
                     })
                     .unwrap_or_else(|| quote! { core::iter::empty() });
 
@@ -239,7 +225,7 @@ fn generate_init_for_fields(fields: &Fields) -> TokenStream {
                 let fty = &f.ty;
 
                 quote_spanned! {f.ty.span()=>
-                    let #fident = <#fty as alles::Alles>::generate();
+                    let #fident = <#fty as allem::Alles>::generate();
                 }
             })
             .collect(),
@@ -248,8 +234,8 @@ fn generate_init_for_fields(fields: &Fields) -> TokenStream {
 }
 
 struct FieldAttributes {
-    with_values: Option<Punctuated<Expr, Token![,]>>,
-    and_values: Option<Punctuated<Expr, Token![,]>>,
+    with_values: Option<Expr>,
+    and_values: Option<Expr>,
 }
 
 fn parse_field_attributes(attrs: &[Attribute]) -> Result<FieldAttributes, syn::Error> {
@@ -259,24 +245,20 @@ fn parse_field_attributes(attrs: &[Attribute]) -> Result<FieldAttributes, syn::E
     };
 
     for attr in attrs {
-        if attr.path().is_ident("alles") {
+        if attr.path().is_ident("allem") {
             attr.parse_nested_meta(|meta| {
+                // used like `with_values = <expr>`
                 if meta.path.is_ident("with_values") {
                     meta.input.parse::<Token![=]>()?;
-
-                    let content;
-                    bracketed!(content in meta.input);
-                    let values = Punctuated::parse_terminated(&content)?;
+                    let values = meta.input.parse()?;
                     field_attrs.with_values = Some(values);
                     return Ok(());
                 }
 
+                // used like `and_values = <expr>`
                 if meta.path.is_ident("and_values") {
                     meta.input.parse::<Token![=]>()?;
-
-                    let content;
-                    bracketed!(content in meta.input);
-                    let values = Punctuated::parse_terminated(&content)?;
+                    let values = meta.input.parse()?;
                     field_attrs.and_values = Some(values);
                     return Ok(());
                 }

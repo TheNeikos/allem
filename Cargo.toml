@@ -1,4 +1,4 @@
 [workspace]
 
-members = ["alles", "alles-derive"]
+members = ["allem", "allem-derive"]
 resolver = "2"

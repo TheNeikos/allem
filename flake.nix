@@ -1,5 +1,5 @@
 {
-  description = "The alles library";
+  description = "The allem library";
   inputs = {
     nixpkgs.url = "nixpkgs/nixos-23.11";
     flake-utils = {
@@ -38,7 +38,7 @@
           cargoExtraArgs = "--all-features --all";
         };
 
-        alles = craneLib.buildPackage {
+        allem = craneLib.buildPackage {
           inherit cargoArtifacts src version;
           cargoExtraArgs = "--all-features --all";
         };
@@ -46,24 +46,24 @@
       in
       rec {
         checks = {
-          inherit alles;
+          inherit allem;
 
-          alles-clippy = craneLib.cargoClippy {
+          allem-clippy = craneLib.cargoClippy {
             inherit cargoArtifacts src;
             cargoExtraArgs = "--all --all-features";
             cargoClippyExtraArgs = "-- --deny warnings";
           };
 
-          alles-fmt = craneLib.cargoFmt {
+          allem-fmt = craneLib.cargoFmt {
             inherit src;
           };
         };
 
-        packages.alles = alles;
-        packages.default = alles;
+        packages.allem = allem;
+        packages.default = allem;
 
-        devShells.default = devShells.alles;
-        devShells.alles = pkgs.mkShell {
+        devShells.default = devShells.allem;
+        devShells.allem = pkgs.mkShell {
           buildInputs = [ ];
 
           nativeBuildInputs = [

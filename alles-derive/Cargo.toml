@@ -1,5 +1,5 @@
 [package]
-name = "alles-derive"
+name = "allem-derive"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,4 +11,4 @@ proc-macro = true
 [dependencies]
 quote = "1"
 proc-macro2 = "1"
-syn = "2"
+syn = { version = "2", features = ["full"] }

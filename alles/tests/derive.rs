@@ -1,5 +1,5 @@
 #![allow(dead_code)]
-use alles::Alles;
+use allem::Alles;
 
 #[derive(Debug, Clone, Alles)]
 struct Foo;
@@ -29,11 +29,11 @@ struct Test5<T: Alles + Clone> {
 enum Test6 {
     Foo,
     Bar {
-        #[alles(and_values = [-0, 2])]
+        #[allem(and_values = [-0, 2])]
         bar: i8,
     },
     Baz {
-        #[alles(with_values = ["Test", "Foo"], and_values = ["bar"])]
+        #[allem(with_values = ["Test", "Foo"], and_values = ["bar"])]
         name: String,
     },
 }
