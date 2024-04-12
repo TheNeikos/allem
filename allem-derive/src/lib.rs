@@ -4,7 +4,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 use syn::{
     parse_macro_input, spanned::Spanned, Attribute, DataEnum, DataStruct, DeriveInput, Error, Expr,
-    Fields, Generics, Ident, Token,
+    Field, Fields, Generics, Ident, Token,
 };
 
 #[proc_macro_derive(Alles, attributes(allem))]
@@ -178,42 +178,44 @@ fn generate_build_for_variant(variant: &syn::Variant) -> Result<TokenStream, Err
 }
 
 fn generate_init_for_fields(fields: &Fields) -> TokenStream {
+    let combine = |fident, f: &Field| -> TokenStream {
+        let fty = &f.ty;
+        let fattrs = match parse_field_attributes(&f.attrs) {
+            Ok(fattrs) => fattrs,
+            Err(err) => {
+                let err_stream = err.into_compile_error();
+                return quote_spanned! {f.ty.span()=>
+                    let #fident = #err_stream;
+                };
+            }
+        };
+
+        let gen = fattrs
+            .with_values
+            .map(|with_values| {
+                quote! { (#with_values).into_iter().map(|i| core::convert::Into::into(i)) }
+            })
+            .unwrap_or_else(|| quote!(<#fty as allem::Alles>::generate()));
+
+        let and_values = fattrs
+            .and_values
+            .map(|and_values| {
+                quote! { (#and_values).into_iter().map(|i| core::convert::Into::into(i)) }
+            })
+            .unwrap_or_else(|| quote! { core::iter::empty() });
+
+        quote_spanned! {f.ty.span()=>
+            let #fident = (#gen).chain(#and_values);
+        }
+    };
+
     match fields {
         syn::Fields::Named(fields) => fields
             .named
             .iter()
             .map(|f| {
-                let fattrs = parse_field_attributes(&f.attrs);
-                let fident = f.ident.as_ref().unwrap();
-
-                let fty = &f.ty;
-                let fattrs = match fattrs {
-                    Ok(fattrs) => fattrs,
-                    Err(err) => {
-                        let err_stream = err.into_compile_error();
-                        return quote_spanned! {f.ty.span()=>
-                            let #fident = #err_stream;
-                        };
-                    }
-                };
-
-                let gen = fattrs
-                    .with_values
-                    .map(|with_values| {
-                        quote! { (#with_values).into_iter().map(|i| core::convert::Into::into(i)) }
-                    })
-                    .unwrap_or_else(|| quote!(<#fty as allem::Alles>::generate()));
-
-                let and_values = fattrs
-                    .and_values
-                    .map(|and_values| {
-                        quote! { (#and_values).into_iter().map(|i| core::convert::Into::into(i)) }
-                    })
-                    .unwrap_or_else(|| quote! { core::iter::empty() });
-
-                quote_spanned! {f.ty.span()=>
-                    let #fident = (#gen).chain(#and_values);
-                }
+                let fident = f.ident.clone().unwrap();
+                combine(fident, f)
             })
             .collect(),
         syn::Fields::Unnamed(fields) => fields
@@ -222,11 +224,7 @@ fn generate_init_for_fields(fields: &Fields) -> TokenStream {
             .enumerate()
             .map(|(idx, f)| {
                 let fident = format_ident!("_{idx}");
-                let fty = &f.ty;
-
-                quote_spanned! {f.ty.span()=>
-                    let #fident = <#fty as allem::Alles>::generate();
-                }
+                combine(fident, f)
             })
             .collect(),
         syn::Fields::Unit => quote! {},

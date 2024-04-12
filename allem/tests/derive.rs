@@ -36,6 +36,7 @@ enum Test6 {
         #[allem(with_values = ["Test", "Foo"], and_values = ["bar"])]
         name: String,
     },
+    Frob(#[allem(and_values = [23])] i8),
 }
 
 #[test]
@@ -48,5 +49,5 @@ fn check_impls() {
     let i8cnt = i8::generate().count();
     let cnt3 = Test6::generate().count();
 
-    assert_eq!(i8cnt + 1 + 2 + 2 + 1, cnt3);
+    assert_eq!(i8cnt + 1 + 2 + 2 + 1 + i8cnt + 1, cnt3);
 }
