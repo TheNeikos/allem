@@ -191,7 +191,7 @@ fn generate_init_for_fields(fields: &Fields) -> TokenStream {
         };
 
         let gen = match fattrs.alternative_gen {
-            None => quote! { core::iter::empty() },
+            None => quote!(<#fty as allem::Alles>::generate()),
             Some(AlternativeGen::WithValues(with_values)) => {
                 quote! { (#with_values).into_iter().map(|i| core::convert::Into::into(i)) }
             }
