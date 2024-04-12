@@ -1,3 +1,5 @@
 pre-release-commit-message = "Prepare release"
 tag-message = "Release {{crate_name}} version {{version}}"
 allow-branch = ["release-*"]
+shared-version = true
+tag-prefix = ""
