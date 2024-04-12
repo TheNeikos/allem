@@ -16,6 +16,15 @@
         flake-utils.follows = "flake-utils";
       };
     };
+    cargo-changelog = {
+      url = "github:matthiasbeyer/cargo-changelog";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+        flake-utils.follows = "flake-utils";
+        crane.follows = "crane";
+        rust-overlay.follows = "rust-overlay";
+      };
+    };
   };
 
   outputs = inputs:
@@ -69,6 +78,7 @@
           nativeBuildInputs = [
             rustTarget
             pkgs.cargo-expand
+            inputs.cargo-changelog.packages."${system}".changelog
           ];
         };
       }
