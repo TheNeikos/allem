@@ -48,6 +48,12 @@ impl Alles for i8 {
     }
 }
 
+impl<A: Alles + Clone> Alles for Option<A> {
+    fn generate() -> impl Iterator<Item = Self> + Clone {
+        std::iter::once(None).chain(A::generate().map(Some))
+    }
+}
+
 #[doc(hidden)]
 pub mod private {
     pub use itertools::iproduct;
