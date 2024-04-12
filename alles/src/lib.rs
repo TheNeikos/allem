@@ -1,11 +1,30 @@
+//! # Generate different values of your data types
+//!
+//! This crate offers users the ability to easily generate lists of values that they consider
+//! interesting. It was created with testing serialization and deserialization tests in mind, but
+//! is not restricted to it.
+//!
+//! The main trait of this crate is [Alles] which has a single function [Alles::generate] to get a
+//! stream of values of whatever type implements it.
+//!
+//! To implement it for your own types you can use the [Alles](derive@Alles) derive macro. Check it out for
+//! documentation!
 pub use alles_derive::Alles;
 
-/// Trait that allows generating all useful variants of a type
+/// Trait to generate different variants of a type
+///
+/// The purpose of `Alles` is to, ironically, not generate _every_ permutation of a given type.
+/// Instead, it is meant to cover most 'interesting' values. Where 'interesting' can be defined by
+/// the user.
+///
+/// The easiest way to implement [Alles] is with the derive attribute.
 pub trait Alles: Sized {
+    /// A finite iterator of elements of this type
     fn generate() -> impl Iterator<Item = Self> + Clone;
 }
 
 impl Alles for u8 {
+    /// The default impl for u8 returns a list of interesting values, mostly primes and maximums
     fn generate() -> impl Iterator<Item = Self> + Clone {
         [
             0, 1, 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73,
@@ -17,6 +36,7 @@ impl Alles for u8 {
 }
 
 impl Alles for i8 {
+    /// The default impl for i8 returns a list of interesting values, mostly primes and maximums
     fn generate() -> impl Iterator<Item = Self> + Clone {
         [
             0, -1, -2, -3, -5, -7, -11, -13, -17, -19, -23, -29, -31, -37, -41, -43, -47, -53, -59,
