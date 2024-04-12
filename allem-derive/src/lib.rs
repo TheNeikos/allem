@@ -7,8 +7,8 @@ use syn::{
     Field, Fields, Generics, Ident, Token,
 };
 
-#[proc_macro_derive(Alles, attributes(allem))]
-pub fn allem_derive(input: TS) -> TS {
+#[proc_macro_derive(Alles, attributes(alles))]
+pub fn alles_derive(input: TS) -> TS {
     let derive_input: DeriveInput = parse_macro_input!(input);
 
     let imp = match derive_input.data {
@@ -243,7 +243,7 @@ fn parse_field_attributes(attrs: &[Attribute]) -> Result<FieldAttributes, syn::E
     };
 
     for attr in attrs {
-        if attr.path().is_ident("allem") {
+        if attr.path().is_ident("alles") {
             attr.parse_nested_meta(|meta| {
                 // used like `with_values = <expr>`
                 if meta.path.is_ident("with_values") {
