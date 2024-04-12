@@ -4,7 +4,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 use syn::{
     parse_macro_input, spanned::Spanned, Attribute, DataEnum, DataStruct, DeriveInput, Error, Expr,
-    Field, Fields, Generics, Ident, Path, Token,
+    Field, Fields, Generics, Ident, Token,
 };
 
 #[proc_macro_derive(Alles, attributes(alles))]
@@ -191,12 +191,16 @@ fn generate_init_for_fields(fields: &Fields) -> TokenStream {
         };
 
         let gen = match fattrs.alternative_gen {
-            None => quote!(<#fty as allem::Alles>::generate()),
+            None => quote_spanned!(fty.span()=> <#fty as allem::Alles>::generate()),
             Some(AlternativeGen::WithValues(with_values)) => {
-                quote! { (#with_values).into_iter().map(|i| core::convert::Into::into(i)) }
+                quote_spanned! {with_values.span()=>
+                    (#with_values).into_iter().map(|i| core::convert::Into::into(i))
+                }
             }
             Some(AlternativeGen::Default) => {
-                quote! { core::iter::once( <#fty as Default>::default() ) }
+                quote_spanned! {fty.span()=>
+                    core::iter::once( <#fty as Default>::default() )
+                }
             }
         };
 
@@ -207,7 +211,7 @@ fn generate_init_for_fields(fields: &Fields) -> TokenStream {
             })
             .unwrap_or_else(|| quote! { core::iter::empty() });
 
-        quote_spanned! {f.ty.span()=>
+        quote_spanned! {f.span()=>
             let #fident = (#gen).chain(#and_values);
         }
     };
