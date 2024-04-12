@@ -78,6 +78,7 @@
           nativeBuildInputs = [
             rustTarget
             pkgs.cargo-expand
+            pkgs.cargo-release
             inputs.cargo-changelog.packages."${system}".changelog
           ];
         };
