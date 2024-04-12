@@ -3,8 +3,8 @@ use proc_macro::TokenStream as TS;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 use syn::{
-    bracketed, parse_macro_input, punctuated::Punctuated, spanned::Spanned, Attribute, DataEnum,
-    DataStruct, DeriveInput, Error, Expr, Fields, Generics, Ident, Token,
+    parse_macro_input, spanned::Spanned, Attribute, DataEnum, DataStruct, DeriveInput, Error, Expr,
+    Fields, Generics, Ident, Token,
 };
 
 #[proc_macro_derive(Alles, attributes(allem))]
@@ -200,14 +200,14 @@ fn generate_init_for_fields(fields: &Fields) -> TokenStream {
                 let gen = fattrs
                     .with_values
                     .map(|with_values| {
-                        quote! { (#with_values).into_iter() }
+                        quote! { (#with_values).into_iter().map(|i| core::convert::Into::into(i)) }
                     })
                     .unwrap_or_else(|| quote!(<#fty as allem::Alles>::generate()));
 
                 let and_values = fattrs
                     .and_values
                     .map(|and_values| {
-                        quote! { (#and_values).into_iter() }
+                        quote! { (#and_values).into_iter().map(|i| core::convert::Into::into(i)) }
                     })
                     .unwrap_or_else(|| quote! { core::iter::empty() });
 
