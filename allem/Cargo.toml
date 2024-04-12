@@ -1,7 +1,10 @@
 [package]
 name = "allem"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+description = "Generate useful variants for your custom types"
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 allem-derive = { version = "0.1.0", path = "../allem-derive" }
