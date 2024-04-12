@@ -4,7 +4,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 use syn::{
     parse_macro_input, spanned::Spanned, Attribute, DataEnum, DataStruct, DeriveInput, Error, Expr,
-    Field, Fields, Generics, Ident, Token,
+    Field, Fields, Generics, Ident, Path, Token,
 };
 
 #[proc_macro_derive(Alles, attributes(alles))]
@@ -190,12 +190,15 @@ fn generate_init_for_fields(fields: &Fields) -> TokenStream {
             }
         };
 
-        let gen = fattrs
-            .with_values
-            .map(|with_values| {
+        let gen = match fattrs.alternative_gen {
+            None => quote! { core::iter::empty() },
+            Some(AlternativeGen::WithValues(with_values)) => {
                 quote! { (#with_values).into_iter().map(|i| core::convert::Into::into(i)) }
-            })
-            .unwrap_or_else(|| quote!(<#fty as allem::Alles>::generate()));
+            }
+            Some(AlternativeGen::Default) => {
+                quote! { core::iter::once( <#fty as Default>::default() ) }
+            }
+        };
 
         let and_values = fattrs
             .and_values
@@ -231,15 +234,20 @@ fn generate_init_for_fields(fields: &Fields) -> TokenStream {
     }
 }
 
+enum AlternativeGen {
+    WithValues(Expr),
+    Default,
+}
+
 struct FieldAttributes {
-    with_values: Option<Expr>,
     and_values: Option<Expr>,
+    alternative_gen: Option<AlternativeGen>,
 }
 
 fn parse_field_attributes(attrs: &[Attribute]) -> Result<FieldAttributes, syn::Error> {
     let mut field_attrs = FieldAttributes {
-        with_values: None,
         and_values: None,
+        alternative_gen: None,
     };
 
     for attr in attrs {
@@ -247,9 +255,27 @@ fn parse_field_attributes(attrs: &[Attribute]) -> Result<FieldAttributes, syn::E
             attr.parse_nested_meta(|meta| {
                 // used like `with_values = <expr>`
                 if meta.path.is_ident("with_values") {
+                    if field_attrs.alternative_gen.is_some() {
+                        return Err(Error::new(
+                            attr.span(),
+                            "Cannot use both 'with_values' and 'with_default'",
+                        ));
+                    }
                     meta.input.parse::<Token![=]>()?;
                     let values = meta.input.parse()?;
-                    field_attrs.with_values = Some(values);
+                    field_attrs.alternative_gen = Some(AlternativeGen::WithValues(values));
+                    return Ok(());
+                }
+
+                // used like `and_values = <expr>`
+                if meta.path.is_ident("with_default") {
+                    if field_attrs.alternative_gen.is_some() {
+                        return Err(Error::new(
+                            attr.span(),
+                            "Cannot use both 'with_values' and 'with_default'",
+                        ));
+                    }
+                    field_attrs.alternative_gen = Some(AlternativeGen::Default);
                     return Ok(());
                 }
 
