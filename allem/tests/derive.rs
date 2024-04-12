@@ -41,6 +41,10 @@ enum Test6 {
         #[alles(with_default)]
         val: bool,
     },
+    Fraz {
+        #[alles(generate_collection_length = [0, 3, 10])]
+        nice: Vec<u8>,
+    },
 }
 
 #[test]
@@ -53,5 +57,5 @@ fn check_impls() {
     let i8cnt = i8::generate().count();
     let cnt3 = Test6::generate().count();
 
-    assert_eq!(i8cnt + 1 + 2 + 2 + 1 + i8cnt + 1 + 1, cnt3);
+    assert_eq!(i8cnt + 1 + 2 + 2 + 1 + i8cnt + 1 + 1 + 3, cnt3);
 }

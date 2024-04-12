@@ -3,8 +3,8 @@ use proc_macro::TokenStream as TS;
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, quote_spanned};
 use syn::{
-    parse_macro_input, spanned::Spanned, Attribute, DataEnum, DataStruct, DeriveInput, Error, Expr,
-    Field, Fields, Generics, Ident, Token,
+    bracketed, parse_macro_input, punctuated::Punctuated, spanned::Spanned, Attribute, DataEnum,
+    DataStruct, DeriveInput, Error, Expr, Field, Fields, Generics, Ident, LitInt, Token,
 };
 
 #[proc_macro_derive(Alles, attributes(alles))]
@@ -202,6 +202,26 @@ fn generate_init_for_fields(fields: &Fields) -> TokenStream {
                     core::iter::once( <#fty as Default>::default() )
                 }
             }
+            Some(AlternativeGen::GenerateCollectionWithLength(lengths)) => {
+                let lengths = lengths.into_iter().map(|length| {
+                    if length > 0 {
+                        quote! { <InnerItem as allem::Alles>::generate().take(#length) }
+                    } else {
+                        quote! { core::iter::empty().take(0) }
+                    }
+                });
+                quote_spanned! {fty.span()=>
+                    {
+                        type InnerItem = <#fty as core::iter::IntoIterator>::Item;
+
+                        [
+                            #(
+                                <#fty as core::iter::FromIterator<InnerItem>>::from_iter( #lengths)
+                            ),*
+                        ].into_iter()
+                    }
+                }
+            }
         };
 
         let and_values = fattrs
@@ -240,6 +260,7 @@ fn generate_init_for_fields(fields: &Fields) -> TokenStream {
 
 enum AlternativeGen {
     WithValues(Expr),
+    GenerateCollectionWithLength(Vec<usize>),
     Default,
 }
 
@@ -254,17 +275,23 @@ fn parse_field_attributes(attrs: &[Attribute]) -> Result<FieldAttributes, syn::E
         alternative_gen: None,
     };
 
+    let check_existing_gen = |field_attrs: &FieldAttributes, attr: &Attribute| {
+        if field_attrs.alternative_gen.is_some() {
+            return Err(Error::new(
+                attr.span(),
+                "Cannot use both 'with_values' and 'with_default'",
+            ));
+        }
+
+        Ok(())
+    };
+
     for attr in attrs {
         if attr.path().is_ident("alles") {
             attr.parse_nested_meta(|meta| {
                 // used like `with_values = <expr>`
                 if meta.path.is_ident("with_values") {
-                    if field_attrs.alternative_gen.is_some() {
-                        return Err(Error::new(
-                            attr.span(),
-                            "Cannot use both 'with_values' and 'with_default'",
-                        ));
-                    }
+                    check_existing_gen(&field_attrs, attr)?;
                     meta.input.parse::<Token![=]>()?;
                     let values = meta.input.parse()?;
                     field_attrs.alternative_gen = Some(AlternativeGen::WithValues(values));
@@ -273,13 +300,24 @@ fn parse_field_attributes(attrs: &[Attribute]) -> Result<FieldAttributes, syn::E
 
                 // used like `and_values = <expr>`
                 if meta.path.is_ident("with_default") {
-                    if field_attrs.alternative_gen.is_some() {
-                        return Err(Error::new(
-                            attr.span(),
-                            "Cannot use both 'with_values' and 'with_default'",
-                        ));
-                    }
+                    check_existing_gen(&field_attrs, attr)?;
                     field_attrs.alternative_gen = Some(AlternativeGen::Default);
+                    return Ok(());
+                }
+
+                if meta.path.is_ident("generate_collection_length") {
+                    check_existing_gen(&field_attrs, attr)?;
+                    meta.input.parse::<Token![=]>()?;
+                    let content;
+                    bracketed!(content in meta.input);
+                    let list = Punctuated::<LitInt, Token![,]>::parse_terminated(&content)?;
+
+                    field_attrs.alternative_gen =
+                        Some(AlternativeGen::GenerateCollectionWithLength(
+                            list.iter()
+                                .map(|l| l.base10_parse::<usize>())
+                                .collect::<Result<_, _>>()?,
+                        ));
                     return Ok(());
                 }
 
